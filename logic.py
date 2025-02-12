@@ -1,6 +1,8 @@
 import aiohttp  # Eşzamansız HTTP istekleri için bir kütüphane
 import random
 import asyncio
+from datetime import datetime, timedelta
+import time
 
 class Pokemon:
     pokemons = {}
@@ -9,6 +11,7 @@ class Pokemon:
         self.pokemon_trainer = pokemon_trainer
         self.pokemon_number = random.randint(1, 1000)
         self.name = None
+        self.last_feed_time = datetime.now()
         if pokemon_trainer not in Pokemon.pokemons:
             Pokemon.pokemons[pokemon_trainer] = self
         else:
@@ -91,7 +94,16 @@ class Pokemon:
             enemy.hp -= self.attack
             return f"{self.name}, {enemy.name}'ye saldırdı. {enemy.name}'nin {enemy.hp} canı kaldı."
         
-
+    async def feed(self, feed_interval=20, hp_increase=10):
+        current_time = datetime.now()
+        delta_time = timedelta(seconds=feed_interval)
+        if (current_time - self.last_feed_time) > delta_time:
+            self.hp += hp_increase
+            self.last_feed_time = current_time
+            return f"Pokémon'un sağlığı geri yüklenir. Mevcut sağlık: {self.hp}"
+        else:
+            return f"Pokémonunuzu şu zaman besleyebilirsiniz: {current_time+delta_time}"
+        
 class Fighter(Pokemon):
     async def saldırı(self,enemy):
         bonus = random.randint(1, 50)
@@ -99,9 +111,15 @@ class Fighter(Pokemon):
         sonuç = await super().saldırı(enemy)
         self.attack -= bonus
         return f"{sonuç} Bonus attack: {bonus}"
-
+    async def feed(self, feed_interval=20, hp_increase=10):
+        hp_increase += random.randint(10, 30)
+        return await super().feed(feed_interval, hp_increase)
 class Wizard(Pokemon):
-    pass
+    async def feed(self, feed_interval=20, hp_increase=10):
+        feed_interval = random.randint(10, 15)
+        return await super().feed(feed_interval, hp_increase)
+
+
 
 if __name__ == "__main__":
     async def deneme():
@@ -112,6 +130,9 @@ if __name__ == "__main__":
         print(await enemy.info())
         print(await ben.saldırı(enemy))
         print(await enemy.saldırı(ben))
-        
+        time.sleep(21)
+        print(await ben.feed())
+        print(await enemy.feed())
+
 
     asyncio.run(deneme())
